@@ -31,7 +31,7 @@ if (!require("randomforest")) {
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 
 #Set working directory:
-setwd("C:/Users/punee/Desktop/New/")
+setwd("C:/Users/punee/Desktop/New/Logistic Reg")
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -152,10 +152,18 @@ p <- predict(model,test,type="response")
 
 #CONFUSION MATRIX:
 # Calculate class probabilities: p_class
-p_class <- ifelse(p>.5,">50K","<=50K")
+p_class <- ifelse(p>.53,">50K","<=50K")
 confusionMatrix(p_class,test[["income"]])
-#We can see Accuracy of model ~ 84%, which is pretty good.
+#We can see Accuracy of model ~ 84%, which is pretty good, also greater than no info rate. Good model.
 
+library(pROC)
+roc_curve   <- roc(response = test$income, predictor = p)
+plot(roc_curve, print.thres = "best")
+abline(v = 1, lty = 2)
+abline(h = 1, lty = 2)
+text(.90, .97, labels = "Ideal Model")
+points(1,1, pch = "O", cex = 1.5)
+#AUC 90% - Good Model!
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 
 #Let's try and build a better model
@@ -166,7 +174,7 @@ confusionMatrix(p_class,test[["income"]])
 #You can use the trainControl() function in caret to use AUC (instead of acccuracy), to tune the parameters of your models. 
 #The twoClassSummary() convenience function allows you to do this easily.
 myControl <- trainControl(
-  method = "cv",
+  method = "cv", #Can use bootstrap resampling, but data too large. Can use method="boot"
   number = 10,
   summaryFunction = twoClassSummary,
   classProbs = TRUE, # IMPORTANT!
@@ -183,13 +191,12 @@ dat2$income[dat2$income==">50K"] <- "Greater.than"
 dat2$income <- as.factor(dat2$income)
 
 model_cv <- train(income ~., dat2,method = "glm",trControl = myControl)
-
+model_cv #ROC~90%, good model
 summary(model_cv)
 #It is the estimated amount by which the log odds of income would increase if Estimate Vars were one unit higher. 
 #Here is how to interpret data: https://stats.stackexchange.com/questions/86351/interpretation-of-rs-output-for-binomial-regression
 #Residual deviance is a measure of the lack of fit of your model taken as a whole
 #Null deviance is such a measure for a reduced model that only includes the intercept
-
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 
 #RANDOM FOREST:
@@ -241,4 +248,4 @@ summary(model)
 # Print maximum ROC statistic
 max(model[["results"]][["ROC"]])
 
-#ROC .9 is very good. Seems this is our best model!!!
+#ROC .9 is very good.
